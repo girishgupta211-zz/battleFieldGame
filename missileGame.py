@@ -2,74 +2,83 @@ import string
 import json
 from ast import literal_eval
 
-def HitMissile(targetBattleShip, hittingBattleShip, curHitCord):	
-	targetActiveCells = targetBattleShip.getActiveCells()	
-	if curHitCord in targetActiveCells:		
-		print (str(hittingBattleShip.getBattleShipId())+ ' fires a missile with target '+ str(curHitCord) +' which HIT')
-		targetActiveCells[curHitCord] = targetActiveCells[curHitCord] -1
-		if(targetActiveCells[curHitCord] == 0):			
-			del targetActiveCells[curHitCord]			
+'''
+This is responsible for hitting on a cell of target battle Area. This return 1 if hit was successful else returns 0
+'''
+def HitCell(targetBattleArea, hittingBattleArea, curHitCord):	
+	targetLiveCells = targetBattleArea.getLiveCells()	
+	battleAreaId = hittingBattleArea.getBattleAreaId()
+	
+	if curHitCord in targetLiveCells:		
+		print (str(battleAreaId)+ ' fires a missile with target '+ str(curHitCord[0]) + str(curHitCord[1]) +' which hit')
+		targetLiveCells[curHitCord] = targetLiveCells[curHitCord] -1
+		if(targetLiveCells[curHitCord] == 0):			
+			del targetLiveCells[curHitCord]			
 		return 1
 	else:
-		print (str(hittingBattleShip.getBattleShipId())+ ' fires a missile with target' + str(curHitCord) + ' which missed')
+		print (str(battleAreaId)+ ' fires a missile with target ' + str(curHitCord[0]) + str(curHitCord[1]) + ' which missed')
 		return 0
 
-
-# this is used to pass parameters for creating tank
-class Tank:
-	def __init__(self, type, tankInitialCord, tankRange):
-		self.type = type
-		self.tankInitialCord = tankInitialCord
-		self.tankRange = tankRange		
-
-	def getType(self):
-		return self.type
-	def getTankInitialCord(self):
-		return self.tankInitialCord
-	def getTankRange(self):
-		return self.tankRange
-
-# this is main class where tank is created 
+'''
+BattleShip is responsible for encapsulating all input required to create a Battle Ship
+'''
 class BattleShip:
-	def __init__(self,maxX,maxY,battleShipId,tanks,missileTargetsForOpponent):
-		self.maxX = maxX
-		self.maxY = maxY		
-		self.tanks = tanks
-		self.activeCells = {}
-		self.battleShipId = battleShipId
-		self.missileTargetsForOpponent = missileTargetsForOpponent
+	'''
+    defining constructor
+    '''
+	def __init__(self, type, positions, dimensions):
+		self.type = type
+		self.positions = positions
+		self.dimensions = dimensions	
+
+'''
+BattleArea represents a battle field for a player. Here we create battleShips. 
+Create a battle area for player.
+'''
+
+class BattleArea:
+	'''
+    defining constructor
+    '''
+	def __init__(self,maxX,maxY,battleAreaId,battleShips,missileTargets):
+		self._maxX = maxX
+		self._maxY = maxY		
+		self.battleShips = battleShips
+		self.liveCells = {}
+		self.battleAreaId = battleAreaId
+		self.missileTargets = missileTargets
 		self.typeDict = {'P': 1 , 'Q' : 2}
 		self.battleAreaCells = {}
 
-	def getBattleShipId(self):
-		return self.battleShipId
+	def getBattleAreaId(self):
+		return self.battleAreaId
 
-	def getActiveCells(self):		
-		return self.activeCells
+	def getLiveCells(self):		
+		return self.liveCells
 
 	def getMissileTargets(self):
-		return self.missileTargetsForOpponent
+		return self.missileTargets
 
 	# though this is not used  as of now, but can be used later if we want to draw the battle field
 	def createBattleArea(self): 
-		MRange = {x+1 for x in range(self.maxX)}
-		NRange = {letter for letter in string.ascii_uppercase if letter <= self.maxY}
-		# Create cells boundry		
+		MRange = {x+1 for x in range(self._maxX)}
+		NRange = {letter for letter in string.ascii_uppercase if letter <= self._maxY}
+		# Create Battle Area boundry
 		for i in NRange:
 			for j in MRange:				
 				self.battleAreaCells[(i,j)] = 0
+
 	# Create ship of given size and type from a given given cordinates
-	def CreateShip(self):
+	def CreateShips(self):
 
-		for tank in self.tanks:
-			locationXRange = ( chr(ord(tank.tankInitialCord[0]) + n)  for n in range(tank.tankRange[0]) )			
-			locationYRange = ( tank.tankInitialCord[1] + n for n in range(tank.tankRange[1]) )			
-			liveCordinates = {}
+		for battleShip in self.battleShips:
+			locationXRange = ( chr(ord(battleShip.positions[0]) + n)  for n in range(battleShip.dimensions[0]) )			
+			locationYRange = ( battleShip.positions[1] + n for n in range(battleShip.dimensions[1]) )			
+			
+			for x in locationXRange:
+				for y in locationYRange:					
+					self.liveCells[(x,y)] = self.typeDict[battleShip.type]
 
-			for i in locationXRange:
-				for j in locationYRange:
-					c = (i,j)
-					self.activeCells[c] = self.typeDict[tank.type]
 
 def processJSONFile(jsonFile):
 	# Pass json file as input
@@ -85,94 +94,131 @@ def processJSONFile(jsonFile):
 		print( "N should be between A and Z (Capital letter Only)" )
 		return 
 
-	tanksBattleArea1 = []
-	for tank in jsonData['tank1']:	
-		type = tank['type']	
-		location = literal_eval(tank['location'])
-		dimension = literal_eval(tank['dimension'])
-		tanksBattleArea1.append(Tank(type,location,dimension))
+	battleShipPlayer1 = []
+	for battleShip in jsonData['battleship1']:	
+		type = battleShip['type']	
+		location = literal_eval(battleShip['location'])
+		dimension = literal_eval(battleShip['dimension'])
+		battleShipPlayer1.append(BattleShip(type,location,dimension))
 
-	tanksBattleArea2 = []
-	for tank in jsonData['tank2']:		
-		type = tank['type']	
-		location = literal_eval(tank['location'])
-		dimension = literal_eval(tank['dimension'])
-		tanksBattleArea2.append(Tank(type,location,dimension))
+	battleShipPlayer2 = []
+	for battleShip in jsonData['battleship2']:		
+		type = battleShip['type']	
+		location = literal_eval(battleShip['location'])
+		dimension = literal_eval(battleShip['dimension'])
+		battleShipPlayer2.append(BattleShip(type,location,dimension))
 
-	player1Hits = list(literal_eval(jsonData['missileTargetsForPlayerA']))
-	player2Hits = list(literal_eval(jsonData['missileTargetsForPlayerB']))
+	player1TargetMissiles = list(literal_eval(jsonData['missileTargetsForPlayerA']))
+	player2TargetMissiles = list(literal_eval(jsonData['missileTargetsForPlayerB']))
 
-	return m,n,tanksBattleArea1,tanksBattleArea2,player1Hits,player2Hits
+	return m,n,battleShipPlayer1,battleShipPlayer2,player1TargetMissiles,player2TargetMissiles
+
+def launchMissiles(battleArea1,battleArea2):
+	p1,p2 = 0,0
+	currPlayer = 1
+	missileTargetsP1 = battleArea2.getMissileTargets()
+	missileTargetsP2 = battleArea1.getMissileTargets()	
+
+	print ("Player 1 has these active cells " + str(battleArea1.getLiveCells()))
+	print ("Player 1 has these targets to  hit: " + str(battleArea1.getMissileTargets()))
+	print ("Player 2 has these active cells " + str(battleArea2.getLiveCells()))
+	print ("Player 2 has these targets to  hit: " + str(battleArea2.getMissileTargets()))
+
+	while(True):				
+		if(currPlayer == 2 and p2 < len(missileTargetsP1)):			
+			curentCord = missileTargetsP1[p2]
+			status = HitCell(battleArea1, battleArea2 ,curentCord )
+			# if there are no more active cells on opposite battle Area, then Player2 wins the battle
+			if(len(battleArea1.getLiveCells()) == 0):
+				print (str(battleArea2.getBattleAreaId()) + ' won the battle' )
+				return	
+
+			if(status == 0):
+				currPlayer = 1
+			else:
+				currPlayer = 2			
+			p2 = p2 + 1 
+			
+		elif(currPlayer == 1 and p1 < len(missileTargetsP2)):			
+			curentCord = missileTargetsP2[p1]
+			status = HitCell(battleArea2, battleArea1 ,curentCord)
+			if(len(battleArea2.getLiveCells()) == 0):
+				print (str(battleArea1.getBattleAreaId()) + ' won the battle' )
+				return
+			if(status == 0):
+				currPlayer = 2
+			else:
+				currPlayer = 1
+			p1 = p1 + 1 
+
+		elif(p2+p1 >= len(missileTargetsP2)+len(missileTargetsP1)):
+			if(currPlayer == 1):
+				print (str(battleArea1.getBattleAreaId()) + ' has no more missiles left' )
+			else:
+				print (str(battleArea2.getBattleAreaId()) + ' has no more missiles left' )
+			break
+
+		# This is used for switching if any of the player has no more missiles left
+		else:
+			if currPlayer ==1 :
+				print (str(battleArea1.getBattleAreaId()) + ' has no more missiles left' )				
+				currPlayer =2
+			else:
+				print (str(battleArea1.getBattleAreaId()) + ' has no more missiles left' )
+				currPlayer = 1	
+
+	if(len(battleArea1.getLiveCells()) != 0 and len(battleArea2.getLiveCells()) != 0):
+		print ('Players declare peace: Let Peace Prevail In This World' )
 
  
-def main():
-	m,n,tanksBattleArea1,tanksBattleArea2,player1Hits,player2Hits = processJSONFile('input.json')
+def main(inputFile):
+	try:
+		m,n,battleShipPlayer1,battleShipPlayer2,player1TargetMissiles,player2TargetMissiles = processJSONFile(inputFile)
+		battleArea1 = BattleArea(m,n,"Player-1",battleShipPlayer1,player1TargetMissiles)
+		battleArea2 = BattleArea(m,n,"Player-2",battleShipPlayer2,player2TargetMissiles)
+		# battleArea1.createBattleArea()
+		# print (battleArea1.battleAreaCells)
+		battleArea1.CreateShips()
+		battleArea2.CreateShips()
+		launchMissiles(battleArea1,battleArea2)	
+	except Exception, e:
+		print ("Please pass a valid input file(json format) \n")
+		raise e
 	
-	battleShip1 = BattleShip(m,n,"Player1",tanksBattleArea1,player1Hits)
-	battleShip2 = BattleShip(m,n,"Player2",tanksBattleArea2,player2Hits)
-	battleShip1.createBattleArea()
-	print (battleShip1.battleAreaCells)
-
-	battleShip1.CreateShip()
-	battleShip2.CreateShip()
-
-	battleShip1hit = 0
-	battleShip2hit = 0
-	currentBattleShip = 1
-
-	print "Player 1 has theese active cells " + str(battleShip1.getActiveCells())	
-	print "Player 1 has these many hits: " + str(player1Hits)
-	print "Player 2 has theese active cells " + str(battleShip2.getActiveCells())	
-	print "Player 2 has these many hits: " + str(player2Hits)
-
-
-	while(True):		
-		# print "current plauer = " + str(currentBattleShip)
-		if(currentBattleShip == 2 and battleShip2hit < (len(battleShip2.getMissileTargets()))):
-			if(len(battleShip1.getActiveCells()) == 0):
-				print (str(battleShip2.getBattleShipId()) + ' Wins the battle' )
-				break		
-			curentCord = battleShip2.getMissileTargets()[battleShip2hit]
-			status = HitMissile(battleShip1, battleShip2 ,curentCord )
-			if(status == 0):
-				currentBattleShip = 1
-			else:
-				currentBattleShip = 2
-			
-			battleShip2hit = battleShip2hit + 1 
-			
-		elif(currentBattleShip == 1 and battleShip1hit < (len(battleShip1.getMissileTargets()))):
-			if(len(battleShip2.getActiveCells()) == 0):
-				print (str(battleShip1.getBattleShipId()) + ' Wins the battle' )
-				break	
-			curentCord = battleShip1.getMissileTargets()[battleShip1hit]
-			status = HitMissile(battleShip2, battleShip1 ,curentCord)
-			if(status == 1):
-				currentBattleShip = 1
-			else:
-				currentBattleShip = 2
-
-			battleShip1hit = battleShip1hit + 1 
-
-		else:
-			if(currentBattleShip ==1):
-				print (str(battleShip1.getBattleShipId()) + ' has no missiles left' )				
-				currentBattleShip =2
-			else:
-				currentBattleShip = 1
-				print (str(battleShip1.getBattleShipId()) + ' has no missiles left' )
-			if (battleShip2hit+battleShip1hit >= len(battleShip1.getMissileTargets())+len(battleShip2.getMissileTargets())):
-				break;
-
-	if(len(battleShip1.getActiveCells()) == 0):
-				print (str(battleShip2.getBattleShipId()) + ' Wins the battle' )
-				
-	if(len(battleShip2.getActiveCells()) == 0):
-				print (str(battleShip1.getBattleShipId()) + ' Wins the battle' )
-
-	if(len(battleShip1.getActiveCells()) != 0 and len(battleShip2.getActiveCells()) != 0):
-		print ('Let Peace Prevail In This World' )
-
 
 if __name__ == '__main__':
-	main()
+	# main('input.json')
+	# main('input_winner2.json')
+	main('input_winner1.json')
+
+# input.json file format(required as input)
+# {
+# 	"m":9,
+# 	"n":"H",
+# 	"battleship1" : [
+# 		{
+# 			"dimension" :  "(2,1)",
+# 			"location" :  "('A',1)",
+# 			"type" : "Q"
+# 		},
+# 		{
+# 			"dimension" :  "(4,2)",
+# 			"location" :  "('D',4)",
+# 			"type" : "P"
+# 		}
+# 		],
+# 	"battleship2" : [
+# 		{
+# 			"dimension" :  "(2,1)",
+# 			"location" :  "('B',1)",
+# 			"type" : "P"
+# 		},
+# 		{
+# 			"dimension" :  "(4,2)",
+# 			"location" :  "('C',3)",
+# 			"type" : "P"
+# 		}
+# 		],
+# 		"missileTargetsForPlayerA" : "('A',1) , ('B',2) , ('C',3),('B',1) , ( 'C',4 ), ( 'D',5 ),('E',1) , ( 'D',4 ), ('B',3)",
+# 		"missileTargetsForPlayerB" : "('A',1) , ('B',2), ('B',3) ,   ( 'D',5)  "
+# }	
