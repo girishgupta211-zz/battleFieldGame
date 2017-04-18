@@ -39,6 +39,7 @@ class BattleShip:
 		self.battleShipId = battleShipId
 		self.missileTargetsForOpponent = missileTargetsForOpponent
 		self.typeDict = {'P': 1 , 'Q' : 2}
+		self.battleAreaCells = {}
 
 	def getBattleShipId(self):
 		return self.battleShipId
@@ -51,15 +52,12 @@ class BattleShip:
 
 	# though this is not used  as of now, but can be used later if we want to draw the battle field
 	def createBattleArea(self): 
-		MRange = {x+1 for x in range(m)}
-		NRange = {letter for letter in string.ascii_uppercase if letter <= n}
-
-		# Create cells boundry
-		cordinates = {}
+		MRange = {x+1 for x in range(self.maxX)}
+		NRange = {letter for letter in string.ascii_uppercase if letter <= self.maxY}
+		# Create cells boundry		
 		for i in NRange:
 			for j in MRange:				
-				cordinates[(i,j)] = 0
-
+				self.battleAreaCells[(i,j)] = 0
 	# Create ship of given size and type from a given given cordinates
 	def CreateShip(self):
 
@@ -73,46 +71,50 @@ class BattleShip:
 					c = (i,j)
 					self.activeCells[c] = self.typeDict[tank.type]
 
-def main():
+def processJSONFile(jsonFile):
 	# Pass json file as input
-	j = open('input.json', 'r')
-	data = json.load(j)	
-	m = data['m']
-	n = data['n']
-
+	j = open(jsonFile, 'r')
+	jsonData = json.load(j)	
+	m = jsonData['m']
+	n = jsonData['n']
 	if(m > 9):
 		print( "M should be less than 9" )
-		return 
+		return
 
 	if( n not in list(string.ascii_uppercase)):
 		print( "N should be between A and Z (Capital letter Only)" )
 		return 
-	
+
 	tanksBattleArea1 = []
-	for tank in data['tank1']:	
+	for tank in jsonData['tank1']:	
 		type = tank['type']	
 		location = literal_eval(tank['location'])
 		dimension = literal_eval(tank['dimension'])
 		tanksBattleArea1.append(Tank(type,location,dimension))
 
 	tanksBattleArea2 = []
-	for tank in data['tank2']:		
+	for tank in jsonData['tank2']:		
 		type = tank['type']	
 		location = literal_eval(tank['location'])
 		dimension = literal_eval(tank['dimension'])
 		tanksBattleArea2.append(Tank(type,location,dimension))
 
+	player1Hits = list(literal_eval(jsonData['missileTargetsForPlayerA']))
+	player2Hits = list(literal_eval(jsonData['missileTargetsForPlayerB']))
 
+	return m,n,tanksBattleArea1,tanksBattleArea2,player1Hits,player2Hits
+
+ 
+def main():
+	m,n,tanksBattleArea1,tanksBattleArea2,player1Hits,player2Hits = processJSONFile('input.json')
 	
-	player1Hits = list(literal_eval(data['missileTargetsForPlayerA']))
-	player2Hits = list(literal_eval(data['missileTargetsForPlayerB']))
-
-	battleShip1 = BattleShip(10,'H',"BattleShip1",tanksBattleArea1,player1Hits)
-	battleShip2 = BattleShip(10,'H',"BattleShip2",tanksBattleArea2,player2Hits)
+	battleShip1 = BattleShip(m,n,"Player1",tanksBattleArea1,player1Hits)
+	battleShip2 = BattleShip(m,n,"Player2",tanksBattleArea2,player2Hits)
+	battleShip1.createBattleArea()
+	print (battleShip1.battleAreaCells)
 
 	battleShip1.CreateShip()
 	battleShip2.CreateShip()
-
 
 	battleShip1hit = 0
 	battleShip2hit = 0
@@ -154,11 +156,11 @@ def main():
 
 		else:
 			if(currentBattleShip ==1):
-				print "battleShip 1 has no missiles left"
+				print (str(battleShip1.getBattleShipId()) + ' has no missiles left' )				
 				currentBattleShip =2
 			else:
 				currentBattleShip = 1
-				print "battleShip 2 has no missiles left"
+				print (str(battleShip1.getBattleShipId()) + ' has no missiles left' )
 			if (battleShip2hit+battleShip1hit >= len(battleShip1.getMissileTargets())+len(battleShip2.getMissileTargets())):
 				break;
 
