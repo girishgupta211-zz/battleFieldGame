@@ -1,0 +1,30 @@
+{
+	"m":9,
+	"n":"H",
+	"tank1" : [
+		{
+			"dimension" :  "(1,1)",
+			"location" :  "('A',1)",
+			"type" : "Q"
+		},
+		{
+			"dimension" :  "(1,2)",
+			"location" :  "('D',4)",
+			"type" : "P"
+		}
+		],
+	"tank2" : [
+		{
+			"dimension" :  "(2,2)",
+			"location" :  "('B',2)",
+			"type" : "P"
+		},
+		{
+			"dimension" :  "(1,2)",
+			"location" :  "('C',3)",
+			"type" : "P"
+		}
+		],
+	"missileTargetsForPlayerA" : "('A',1) , ('B',2) , ('B',2), ('B',3)",
+	"missileTargetsForPlayerB" : "('A',1) , ('B',2), ('B',3) , ('A',1) , ('D',1) , ('E',1) , ( 'D',4 ), ( 'D',4 ), ( 'D',5 ), ( 'D',5)  "
+}
